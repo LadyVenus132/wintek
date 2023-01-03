@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Year;
+import java.util.Calendar;
+
 @Log
 @RestController
 @RequestMapping("/recomendacion")
@@ -17,15 +20,16 @@ public class RecomendacionController {
     @Autowired
     private RecomendacionService recomendacionService;
 
-    @GetMapping("/top")
-    public ResponseEntity<?> getTop(){
-        log.info("[getTop] : ");
-        return ResponseEntity.ok().body(recomendacionService.getTop());
+    @GetMapping("/top/{cant}")
+    public ResponseEntity<?> getTop(@PathVariable Integer cant){
+        Integer anio = Year.now().getValue();
+        //Integer top = 20;
+        return ResponseEntity.ok().body(recomendacionService.obtenerTop(anio, cant));
     }
 
     @GetMapping("/grilla")
     public ResponseEntity<?> getGrilla(){
-        log.info("[getGrilla] : ");
-        return ResponseEntity.ok().body(recomendacionService.getGrilla());
+        Integer anio = Year.now().getValue();
+        return ResponseEntity.ok().body(recomendacionService.getGrilla(anio));
     }
 }

@@ -1,4 +1,4 @@
-package kimagure.wintek.Repository;
+package kimagure.wintek.repository;
 
 public class LibroRepository {
 }
