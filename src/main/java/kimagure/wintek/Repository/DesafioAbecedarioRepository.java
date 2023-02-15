@@ -13,4 +13,11 @@ public interface DesafioAbecedarioRepository extends CrudRepository<DesafioAbece
             " WHERE da.estado is null" +
             " AND da.desafio.id in :tipoIdList")
     List<String> obtenerInicalesDisponibles(@Param("tipoIdList") List<Long> tipoIdList);
+
+    @Query("SELECT da FROM DesafioAbecedario da" +
+            " WHERE da.desafio.id = :desafioId" +
+            " AND da.abecedario.id = :abeceId" +
+            " AND da.estado = null")
+    DesafioAbecedario obtenerDesafioNoCompletado(@Param("desafioId")Long desafioId,
+                                                 @Param("abeceId") Long abeceId);
 }

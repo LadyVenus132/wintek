@@ -8,7 +8,6 @@ import java.io.Serializable;
 
 @Entity
 @ToString
-@AllArgsConstructor(access = AccessLevel.PACKAGE)
 @Data
 @Lazy
 public class Saga implements Serializable {

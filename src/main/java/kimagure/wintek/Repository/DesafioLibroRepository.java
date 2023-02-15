@@ -22,4 +22,11 @@ public interface DesafioLibroRepository extends CrudRepository<DesafioLibro, Lon
             " AND dl.libro.id IN :libroAutorList")
     Integer contarAutorEnDesafio(@Param("idDesafioList") List<Long> idDesafioList,
                                  @Param("libroAutorList") List<Long> libroAutorList);
+
+    @Query("SELECT dl FROM DesafioLibro dl" +
+            " WHERE dl.desafio.id = :desafioId" +
+            " AND dl.libro.id = :libroId" +
+            " AND dl.estado = null ")
+    DesafioLibro obtenerDesafioNoCompletado(@Param("desafioId") Long desafioId,
+                                            @Param("libroId")Long libroId);
 }

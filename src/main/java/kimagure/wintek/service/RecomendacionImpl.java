@@ -1,5 +1,6 @@
 package kimagure.wintek.service;
 
+import kimagure.wintek.domain.recomendacion.Recomendacion;
 import kimagure.wintek.domain.vo.LibroGrillaVO;
 import kimagure.wintek.repository.*;
 import kimagure.wintek.domain.dto.LibroGrillaDTO;
@@ -56,6 +57,9 @@ public class RecomendacionImpl implements RecomendacionService{
     RandomRepository randomRepository;
 
     @Autowired
+    RecomendacionRepository recomendacionRepository;
+
+    @Autowired
     StatusLibroRepository statusLibroRepository;
 
 
@@ -63,40 +67,73 @@ public class RecomendacionImpl implements RecomendacionService{
     public List<LibroGrillaVO> getGrilla(Integer anio) {
         List<LibroGrillaVO> libroGrillaVOList = new ArrayList<>();
 
-        List<LibroGrillaDTO> libroGrillaDTOList = randomRepository.obtenerNovelas(anio);
+        List<Recomendacion> recomendacionList = (List<Recomendacion>) recomendacionRepository.findAll();
 
-        obtenerPuntaje(anio, libroGrillaDTOList, Boolean.FALSE);
+        log.info("recomendacionList SIZE :: " + recomendacionList.size());
 
-        libroGrillaVOList =  ParserUtil.obtenerLibroGrillaVO(libroGrillaDTOList);
+        int i = 1;
+        for(Recomendacion recomendacion : recomendacionList){
+            LibroGrillaVO libroGrillaVO = recomendacion.obtenerVO();
+            libroGrillaVO.setId(i);
+            libroGrillaVOList.add(libroGrillaVO);
 
+            i++;
+        }
+
+        log.info("libroGrillaVOList SIZE :: " + libroGrillaVOList.size());
         return libroGrillaVOList;
     }
 
     @Override
     public List<LibroGrillaVO> obtenerTop(Integer anio, Integer top) {
+        log.info("obtenerTop[] TOP :: " + top);
+
         List<LibroGrillaVO> libroGrillaVOList = new ArrayList<>();
-        
-        List<LibroGrillaDTO> libroGrillaDTOList = randomRepository.obtenerSoloNovelas(anio);
-        libroGrillaDTOList.addAll(randomRepository.obtenerSinGenero(anio));
-        //Pageable pageable = PageRequest.of(0, top);
-        //List<LibroGrillaDTO> libroGrillaDTOList = randomRepository.obtenerNovelasTop(anio, pageable);
 
-        obtenerPuntaje(anio, libroGrillaDTOList, Boolean.TRUE);
+        Pageable pageable = PageRequest.of(0, top);
+        List<Recomendacion> recomendacionList = recomendacionRepository.obtenerTop(pageable);
 
-        //Ordena los libros
-        Collections.sort(libroGrillaDTOList, Collections.reverseOrder());
-        libroGrillaVOList =  ParserUtil.obtenerTopLibroGrillaVO(top, libroGrillaDTOList);
+        int i = 1;
+        for(Recomendacion recomendacion : recomendacionList){
+            LibroGrillaVO libroGrillaVO = recomendacion.obtenerVO();
+            libroGrillaVO.setId(i);
+            libroGrillaVOList.add(libroGrillaVO);
+
+            i++;
+        }
 
         return libroGrillaVOList;
     }
 
-    private void obtenerPuntaje(Integer anio, List<LibroGrillaDTO> libroGrillaDTOList, Boolean omitirLeido) {
+    @Override
+    public void postEliminarRecomendacion() {
+        recomendacionRepository.deleteAll();
+    }
 
+    @Override
+    public void postCalcular(Integer anio) {
+        List<LibroGrillaDTO> libroGrillaDTOList = randomRepository.obtenerSoloNovelas(anio);
+        libroGrillaDTOList.addAll(randomRepository.obtenerSinGenero(anio));
+
+        obtenerPuntaje(anio, libroGrillaDTOList);
+
+        insertarRecomendacion(libroGrillaDTOList);
+    }
+
+    private void insertarRecomendacion(List<LibroGrillaDTO> libroGrillaDTOList) {
+        for(LibroGrillaDTO libroGrillaDTO: libroGrillaDTOList){
+            Recomendacion recomendacion = new Recomendacion(libroGrillaDTO);
+
+            recomendacionRepository.save(recomendacion);
+        }
+    }
+
+    private void obtenerPuntaje(Integer anio, List<LibroGrillaDTO> libroGrillaDTOList) {
         List<String> numeros = Arrays.asList("1", "2", "3", "4", "5", "6", "7", "8", "9", "0");
-        List<String> inicialesTitulos = obtenerInicialesDesafio(anio, "A-Z Título");
+        List<String> inicialesTitulos = obtenerInicialesDesafio(anio, "A-Z TITULO");
         inicialesTitulos.addAll(numeros);
 
-        List<String> inicialesAutor = obtenerInicialesDesafio(anio, "A-Z Autor");
+        List<String> inicialesAutor = obtenerInicialesDesafio(anio, "A-Z AUTOR");
 
         List<Integer> todosAniosList = anioRepository.obtenerTodosAnios();
         todosAniosList.add(0);
@@ -104,32 +141,29 @@ public class RecomendacionImpl implements RecomendacionService{
 
         List<String> subgenerosValidos = obtenerSubgenerosValidos(anio);
 
+        List<Long> desafiosAutorIdList = desafioLibroRepository.obtenerIdDesafioImportante();
+
         for (LibroGrillaDTO libroGrillaDTO : libroGrillaDTOList) {
 
-            Boolean leido = Boolean.FALSE;
-            Boolean sagaValida = libroGrillaDTO.getNumSaga() == null || libroGrillaDTO.getNumSaga() == 1;
-            Boolean azValido = Boolean.TRUE;
-            Boolean ultSigloValido = Boolean.TRUE;
+            boolean leido = Boolean.FALSE;
+            boolean sagaValida = libroGrillaDTO.getNumSaga() == null || libroGrillaDTO.getNumSaga() == 1;
+            boolean azValido = Boolean.TRUE;
+            boolean ultSigloValido = Boolean.TRUE;
 
-            Integer puntaje = 0;
-            Integer ultSiglo = 0;
-            Integer genero = 0;
-            Integer cantTitulo = 0;
-            Integer cantAutor = 0;
+            int puntaje = 0;
+            int ultSiglo = 0;
+            int genero = 0;
+            int cantTitulo = 0;
+            int cantAutor = 0;
 
             libroGrillaDTO.setAutorDTO(autorService.obtenerAutoresPorLibro(libroGrillaDTO.getLibroId()));
-
-            if(omitirLeido && !sagaValida) {
-                libroGrillaDTO.setPuntaje(puntaje);
-                continue;
-            }
 
             //Status Lectura
             Integer cantLeido = statusLibroRepository.contarCantidadLeido(libroGrillaDTO.getLibroId());
             leido = cantLeido > 0 ? Boolean.TRUE : Boolean.FALSE;
             libroGrillaDTO.setLeido(leido);
 
-            if(omitirLeido && leido) {
+            if(leido) {
                 libroGrillaDTO.setPuntaje(0);
                 continue;
             }
@@ -143,21 +177,20 @@ public class RecomendacionImpl implements RecomendacionService{
 
             azValido = (libroGrillaDTO.getAzTitulo() && libroGrillaDTO.getAzAutor());
 
-            if(omitirLeido && !azValido) {
+            if(!azValido) {
                 libroGrillaDTO.setPuntaje(0);
                 continue;
             }
 
             //Ultimo Siglo
-            Boolean containAnioNoValido = aniosNoValidos.contains(libroGrillaDTO.getAnio());
-            ultSigloValido = containAnioNoValido ? Boolean.FALSE : ultSigloValido;
+            ultSigloValido = aniosNoValidos.contains(libroGrillaDTO.getAnio()) ? Boolean.FALSE : ultSigloValido;
 
             libroGrillaDTO.setUltSiglo(ultSigloValido);
             ultSiglo = todosAniosList.contains(libroGrillaDTO.getAnio()) ? 1 : 0;
 
             puntaje = puntaje + ultSiglo;
 
-            if(omitirLeido && !ultSigloValido) {
+            if(!ultSigloValido) {
                 libroGrillaDTO.setPuntaje(0);
                 continue;
             }
@@ -172,7 +205,7 @@ public class RecomendacionImpl implements RecomendacionService{
 
             //Cantidad Autor
             for (Long autorId : libroGrillaDTO.getAutorDTO().getAutorIdList()) {
-                cantAutor = cantAutor + obtenerCantidadAutor(autorId);
+                cantAutor = cantAutor + obtenerCantidadAutor(autorId, desafiosAutorIdList);
             }
             libroGrillaDTO.setCantAutor(cantAutor);
 
@@ -222,10 +255,8 @@ public class RecomendacionImpl implements RecomendacionService{
     }
 
     //Obtiene la cantidad de veces que aparece el autor en desafios
-    private Integer obtenerCantidadAutor(Long autorId) {
+    private Integer obtenerCantidadAutor(Long autorId, List<Long> idDesafioList) {
         Integer cantAutor = 0;
-
-        List<Long> idDesafioList = desafioLibroRepository.obtenerIdDesafioImportante();
 
         List<Long> libroAutorList = autorLibroRepository.obtenerLibroIdPorAutor(autorId);
 
