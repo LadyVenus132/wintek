@@ -9,4 +9,8 @@ public interface RecomendacionService {
     List<LibroGrillaVO> getGrilla(Integer anio);
 
     List<LibroGrillaVO> obtenerTop(Integer anio, Integer top);
+
+    void postCalcular(Integer anio);
+
+    void postEliminarRecomendacion();
 }

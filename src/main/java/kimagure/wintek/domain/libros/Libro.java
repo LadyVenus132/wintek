@@ -26,6 +26,9 @@ public class Libro implements Serializable {
     String nombre;
 
     @Column
+    String fantasia;
+
+    @Column
     Integer anio;
 
     @Column

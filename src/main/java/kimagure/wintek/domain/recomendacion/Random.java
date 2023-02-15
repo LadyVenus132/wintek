@@ -1,5 +1,6 @@
-package kimagure.wintek.domain.genero;
+package kimagure.wintek.domain.recomendacion;
 
+import kimagure.wintek.domain.libros.Libro;
 import lombok.*;
 import org.springframework.context.annotation.Lazy;
 
@@ -8,9 +9,11 @@ import java.io.Serializable;
 
 @Entity
 @ToString
+@AllArgsConstructor(access = AccessLevel.PACKAGE)
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 @Data
 @Lazy
-public class Subgenero implements Serializable {
+public class Random implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private @Id
@@ -18,8 +21,11 @@ public class Subgenero implements Serializable {
     Long id;
 
     @Column
-    String subgenero;
+    Integer valor;
 
     @ManyToOne
-    Genero genero;
+    Libro libro;
+
+    @Column
+    Integer anio;
 }

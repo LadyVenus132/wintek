@@ -23,4 +23,8 @@ public interface AutorLibroRepository extends CrudRepository<AutorLibro, Long> {
     @Query("SELECT al.libro.id FROM AutorLibro al" +
             " WHERE al.autor.id = :autorId")
     List<Long> obtenerLibroIdPorAutor(@Param("autorId") Long autorId);
+
+    @Query("SELECT al.autor FROM AutorLibro al" +
+            " WHERE al.libro.id = :libroId")
+    List<Autor> obtenerAutoresPorLibro(@Param("libroId") Long libroId);
 }

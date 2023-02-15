@@ -1,6 +1,6 @@
 package kimagure.wintek.repository;
 
-import kimagure.wintek.domain.Random;
+import kimagure.wintek.domain.recomendacion.Random;
 import kimagure.wintek.domain.dto.LibroGrillaDTO;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;

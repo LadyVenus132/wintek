@@ -13,4 +13,11 @@ public interface DesafioAnioRepository extends CrudRepository<DesafioAnio, Long>
             " WHERE da.estado = 'OK'" +
             " AND da.desafio.anio in :anioList")
     List<Integer> obtenerAniosNoValidos(@Param("anioList") List<Integer> anioList);
+
+    @Query("SELECT da FROM DesafioAnio da" +
+            " WHERE da.desafio.id = :desafioId" +
+            " AND da.anio.id = :anioId" +
+            " AND da.estado = null")
+    DesafioAnio obtenerDesafioNoCompletado(@Param("desafioId")Long desafioId,
+                                           @Param("anioId") Long anioId);
 }
